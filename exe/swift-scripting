@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+require "swift_scripting_platform_tool"
+
+module SwiftScriptingPlatformTool
+  app = SwiftScriptingApp.new
+  app.main(ARGV)
+end
