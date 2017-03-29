@@ -2,6 +2,7 @@ require "pathname"
 
 require_relative "SwiftUtil"
 require_relative "MainSwiftCode"
+require_relative "AppUtil"
 
 module SwiftScriptingPlatformTool
   class MainSwiftUpdater
@@ -10,30 +11,24 @@ module SwiftScriptingPlatformTool
 
     def sync(target)
       @target = target
-      
-      regex = /^([\w\-]*)Script\.swift$/
 
       script_files = Dir.chdir(target[:dir]) {
         Pathname.glob("**/*Script.swift").map {|x| target[:dir] + x }
       }
 
       scripts = script_files.map {|script_file|
-        m = regex.match(script_file.basename.to_s)
-        if m[1].length == 0
-          next []
-        end
-        name = class_name_to_script_name(m[1])
-        next [{
-          class_name: "#{m[1]}Script",
-          script_name: name
-        }]
-      }.flatten(1)
+        class_name = script_file.basename(".swift").to_s
+        script_name = AppUtil.class_name_to_script_name(class_name)
+        {
+          class_name: class_name,
+          script_name: script_name
+        }
+      }
 
       path = target[:main_swift]
       
       lines = SwiftUtil.read(path)
       add_import_lib_if_need(lines)
-
 
       MainSwiftCode.write_service_main_if_need(lines)
       range = MainSwiftCode.search_main_code(lines)
@@ -62,16 +57,6 @@ module SwiftScriptingPlatformTool
       lines.insert(range[0], *main_code.lines)
 
       SwiftUtil.write(path, lines)
-    end
-
-    def class_name_to_script_name(name)
-      regex = /(?:[A-Z][a-z]*|[a-z]+|[0-9]+)/
-      strs = [ name ]
-      strs = strs.map {|x| x.split("-") }.flatten(1)
-      strs = strs.map {|x| x.split("_") }.flatten(1)
-      strs = strs.map {|x| x.scan(regex) }.flatten(1)
-      strs = strs.map {|x| x.downcase }
-      return strs.join("-")
     end
 
     def find_import_lib(lines)
