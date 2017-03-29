@@ -9,6 +9,7 @@ module SwiftScriptingPlatformTool
     attr_reader :dir
     attr_accessor :name
     attr_accessor :main_swift
+    attr_accessor :script_class_files
     
     def initialize(dir)
       @dir = dir
@@ -19,10 +20,15 @@ module SwiftScriptingPlatformTool
     def reset
       @name = nil
       @main_swift = nil
+      @script_class_files = []
     end
 
     def scan
       reset
+
+      @script_class_files = Dir.chdir(dir) {
+        Pathname.glob("**/*Script.swift").map {|x| dir + x }
+      }
 
       main_swift_path = nil
 
@@ -50,5 +56,11 @@ module SwiftScriptingPlatformTool
       path = dir + "#{class_name}.swift"
       path.binwrite(str)
     end
+
+    def get_script_class_path(class_name)
+      script_class_files.find {|x| 
+        x.basename.to_s == "#{class_name}.swift"}
+    end
+
   end
 end

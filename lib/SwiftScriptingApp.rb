@@ -17,7 +17,7 @@ module SwiftScriptingPlatformTool
     end
 
     def print_error(error)
-      print "error: #{error}\n\n"
+      puts "error: #{error}"
     end
 
     def print_version
@@ -31,6 +31,7 @@ module SwiftScriptingPlatformTool
         "Command list:",
         "",
         "    init        init SPM project",
+        "    list        show script list",
         "    add         add script",
         "    sync        update main.swift and entry point scripts",
         "                based on existing script class files",
@@ -59,6 +60,9 @@ module SwiftScriptingPlatformTool
         when "init"
           main_init(args)
           return
+        when "list"
+          main_list(args)
+          return
         when "add"
           main_add(args)
           return
@@ -72,6 +76,7 @@ module SwiftScriptingPlatformTool
       end
 
       print_error(error)
+      puts
       print_help
     end
 
@@ -125,6 +130,7 @@ module SwiftScriptingPlatformTool
 
       if error
         print_error(error)
+        puts
         print_init_help
         return
       end
@@ -135,6 +141,52 @@ module SwiftScriptingPlatformTool
       tree.add_scripting_lib_if_need
 
       main_sync([])
+    end
+
+    def print_list_help
+      lines = [
+        "Usage: swift-scripting list",
+        "",
+        "no help",
+        ""
+      ]
+      puts lines.map {|x| x + "\n" }.join
+    end
+
+    def main_list(args)
+      error = nil
+
+      while true
+        if args.length == 0
+          break
+        end
+        arg = args.shift
+
+        case arg
+        when "-h", "--help"
+          print_list_help
+          return
+        else
+          error = "invalid args"
+          break
+        end
+      end
+
+      if error
+        print_error(error)
+        puts
+        print_list_help
+        return
+      end
+
+      init_tree
+      for target in tree.targets
+        for script_entry in target.main_swift.script_entries
+          path = target.get_script_class_path(script_entry.class_name)
+          puts format("    %-16s => %s", 
+            script_entry.script_name, path.to_s)
+        end
+      end
     end
 
     def print_add_help
@@ -175,6 +227,7 @@ module SwiftScriptingPlatformTool
       end
       if error
         print_error(error)
+        puts
         print_add_help
         return
       end
@@ -182,6 +235,15 @@ module SwiftScriptingPlatformTool
       init_tree
       if ! check_tree
         return
+      end
+
+      for target in tree.targets.select {|x| x.main_swift }
+        for script in target.main_swift.script_entries
+          if script.script_name == script_name
+            print_error("script #{script_name} is already defined")
+            return
+          end
+        end
       end
 
       tree.targets[0].add_script_swift(script_name)

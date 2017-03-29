@@ -123,11 +123,7 @@ module SwiftScriptingPlatformTool
       for target in targets
         target.main_swift.insert_import_if_need
 
-        script_class_files = Dir.chdir(target.dir) {
-          Pathname.glob("**/*Script.swift").map {|x| target.dir + x }
-        }
-
-        script_class_names = script_class_files.map {|x|
+        script_class_names = target.script_class_files.map {|x|
           x.basename(".swift").to_s
         }
 
