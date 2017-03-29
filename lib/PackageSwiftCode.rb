@@ -16,8 +16,11 @@ module SwiftScriptingPlatformTool
       str = ShellUtil.exec_capture(["swift", "package", "dump-package"])
       @json = JSON.parse(str)
     end
+    def is_spm_inited
+      path.exist?
+    end
     def init_spm_if_need
-      if path.exist?
+      if is_spm_inited
         return
       end
 

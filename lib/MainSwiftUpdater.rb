@@ -5,7 +5,12 @@ require_relative "MainSwiftCode"
 
 module SwiftScriptingPlatformTool
   class MainSwiftUpdater
+    attr_reader :main_code
+    attr_reader :target
+
     def sync(target)
+      @target = target
+      
       regex = /^([\w\-]*)Script\.swift$/
 
       script_files = Dir.chdir(target[:dir]) {
@@ -27,11 +32,13 @@ module SwiftScriptingPlatformTool
       path = target[:main_swift]
       
       lines = SwiftUtil.read(path)
+      add_import_lib_if_need(lines)
+
 
       MainSwiftCode.write_service_main_if_need(lines)
       range = MainSwiftCode.search_main_code(lines)
 
-      main_code = MainSwiftCode.new
+      @main_code = MainSwiftCode.new
       main_code.scan_lines(lines[*range])
 
       for script in scripts
@@ -65,6 +72,19 @@ module SwiftScriptingPlatformTool
       strs = strs.map {|x| x.scan(regex) }.flatten(1)
       strs = strs.map {|x| x.downcase }
       return strs.join("-")
+    end
+
+    def find_import_lib(lines)
+      regex = /import SwiftScriptingPlatform/
+      lines.any? {|line| regex.match(line) }
+    end
+
+    def add_import_lib_if_need(lines)
+      if find_import_lib(lines)
+        return
+      end
+
+      lines.insert(0, "import SwiftScriptingPlatform")
     end
   end
 end
