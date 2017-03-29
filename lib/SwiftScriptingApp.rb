@@ -4,6 +4,7 @@ require "json"
 require_relative "Config"
 require_relative "ShellUtil"
 require_relative "SwiftUtil"
+require_relative "AppArgsParser"
 require_relative "PackageSwiftCode"
 require_relative "SpmTargetsReader"
 require_relative "MainSwiftUpdater"
@@ -11,15 +12,13 @@ require_relative "MainSwiftUpdater"
 module SwiftScriptingPlatformTool
   class SwiftScriptingApp
 
-    attr_reader :package_swift_path
-
+    attr_reader :arg_parser
     def initialize
-      @package_swift_path = Pathname("Package.swift")
-      @package_json = nil
+      @arg_parser = AppArgsParser.new
     end
 
     def main(args)
-      command, params = parse_args(args)
+      command, params = arg_parser.parse_main(args)
       case command
       when "empty"
         puts "error: no command args"
@@ -40,29 +39,6 @@ module SwiftScriptingPlatformTool
       end
 
       print_help
-    end
-
-    def parse_args(args)
-      i = 0
-      while true
-        if i >= args.length
-          return ["empty"]
-        end
-        arg = args[i]
-        if arg == "-v" || arg == "--version"
-          return ["version"]
-        end
-        if arg == "-h" || arg == "--help"
-          return ["help"]
-        end
-        if arg == "init"
-          return ["init", args[(i+1) .. -1]]
-        end
-        if arg == "sync"
-          return ["sync", args[(i+1) .. -1]]
-        end
-        return ["invalid", arg]
-      end
     end
 
     def print_help
@@ -100,8 +76,5 @@ module SwiftScriptingPlatformTool
         updater.sync(target)
       end
     end
-
-  private
-    attr_reader :package_json
   end
 end
