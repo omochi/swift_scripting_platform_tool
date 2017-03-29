@@ -144,7 +144,6 @@ module SwiftScriptingPlatformTool
       SwiftUtil.write(path, lines)
     end
 
-
   private
     attr_reader :package_json
   end

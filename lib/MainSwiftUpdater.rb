@@ -1,54 +1,10 @@
 require "pathname"
 
 require_relative "SwiftUtil"
+require_relative "MainSwiftCode"
 
 module SwiftScriptingPlatformTool
   class MainSwiftUpdater
-    
-    def find_service_main(path)
-      lines = SwiftUtil.read(path)
-      regex = /ScriptService\.main/
-      index = nil
-      for i in 0...lines.length
-        if regex.match(lines[i])
-          index = i
-          break
-        end
-      end
-      if index == nil
-        return false
-      end
-
-      indent = SwiftUtil.count_indent(lines[index])
-      end_index = index
-      for i in (index + 1)...lines.length
-        line_indent, line_body = SwiftUtil.split_indent(lines[i])
-        if line_body.length == 0 || indent < line_indent.length
-          end_index = i
-        else
-          break
-        end
-      end
-
-      return [index, (end_index - index) + 2]
-    end
-
-    def write_service_main_if_need(path)
-      lines = SwiftUtil.read(path)
-      range = find_service_main(path)
-      if range == false
-        lines = lines.map {|x| SwiftUtil.comment_in(x) }
-        
-        lines.concat [
-          "",
-          "try ScriptService.main { register in",
-          "}"
-        ]
-
-        SwiftUtil.write(path, lines)
-      end
-    end
-
     def sync(target)
       regex = /^([\w\-]*)Script\.swift$/
 
@@ -70,48 +26,45 @@ module SwiftScriptingPlatformTool
 
       path = target[:main_swift]
       
-      write_service_main_if_need(path)
-      range = find_service_main(path)
-
       lines = SwiftUtil.read(path)
-      main_lines = lines[range[0], range[1]]
 
-      new_main_lines = sync_lines_with_scripts(main_lines, scripts)
+      MainSwiftCode.write_service_main_if_need(lines)
+      range = MainSwiftCode.search_main_code(lines)
 
-      lines.slice!(range[0], range[1])
-      lines.insert(range[0], *new_main_lines)
+      main_code = MainSwiftCode.new
+      main_code.scan_lines(lines[*range])
+
+      for script in scripts
+        if main_code.entries.any? {|x| x[:class_name] == script[:class_name] }
+          next
+        end
+        main_code.add_entry(script[:script_name], script[:class_name])
+      end
+
+      for entry in main_code.entries
+        if scripts.any? {|x| x[:class_name] == entry[:class_name] }
+          next
+        end
+        for remove_entry in main_code.entries
+          .select {|x| x[:class_name] == entry[:class_name] }
+          main_code.remove_entry(remove_entry[:line_index])
+        end
+      end
+
+      lines.slice!(*range)
+      lines.insert(range[0], *main_code.lines)
 
       SwiftUtil.write(path, lines)
     end
 
     def class_name_to_script_name(name)
       regex = /(?:[A-Z][a-z]*|[a-z]+|[0-9]+)/
-      strs = [ name ].map {|x| x.split("-") }.flatten(1)
+      strs = [ name ]
+      strs = strs.map {|x| x.split("-") }.flatten(1)
       strs = strs.map {|x| x.split("_") }.flatten(1)
       strs = strs.map {|x| x.scan(regex) }.flatten(1)
       strs = strs.map {|x| x.downcase }
       return strs.join("-")
-    end
-
-    def sync_lines_with_scripts(lines, scripts)
-      scripts = scripts.select {|script|
-        cls = Regexp.escape(script[:class_name])
-        regex = /register\s*\(.*,\s*#{cls}\.self\s*\)/
-        !lines.any? {|x| regex.match(x) }
-      }
-
-      open_indent = SwiftUtil.count_indent(lines[0])
-      entry_indent = open_indent + SwiftUtil.tab_indent_size
-
-      for script in scripts
-        name = script[:script_name]
-        cls = script[:class_name]
-        str = "register(\"#{name}\", #{cls}.self)"
-        str = SwiftUtil.indent_right(str, entry_indent)
-        lines.insert(lines.length - 1, str)
-      end
-
-      return lines
     end
   end
 end
