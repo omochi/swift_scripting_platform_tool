@@ -4,6 +4,7 @@ require "json"
 require_relative "Config"
 require_relative "ShellUtil"
 require_relative "SwiftUtil"
+require_relative "PackageSwiftCode"
 require_relative "SpmTargetsReader"
 require_relative "MainSwiftUpdater"
 
@@ -83,10 +84,10 @@ module SwiftScriptingPlatformTool
       puts "swift-scripting #{SwiftScriptingPlatformTool::VERSION}"
     end
 
-    def main_init
-      init_spm
-      load_package
-      add_swift_scripting_platform_dependency
+    def main_init(args)
+      package_code = PackageSwiftCode.new
+      package_code.init_spm_if_need
+      package_code.add_scripting_lib_if_need
       
       main_sync([])
     end
@@ -98,50 +99,6 @@ module SwiftScriptingPlatformTool
         updater = MainSwiftUpdater.new
         updater.sync(target)
       end
-    end
-
-    def init_spm
-      if Pathname("Package.swift").exist?
-        return
-      end
-
-      ShellUtil.exec(["swift", "package", "init", "--type", "executable"])
-    end
-
-    def load_package
-      json_str = ShellUtil.exec_capture(["swift", "package", "dump-package"])
-      @package_json = JSON.parse(json_str)
-    end
-
-    def has_swift_scripting_platform_dependency
-      deps = package_json["dependencies"]
-      if ! deps
-        return false
-      end
-      config = Config.shared.swift_scripting_platform
-      if deps.any? {|x| 
-        url_path_str = URI.parse(x["url"]).path
-        name = Pathname(url_path_str).basename(".*").to_s
-        config[:name] == name
-      }
-        return true
-      end
-      return false
-    end
-
-    def add_swift_scripting_platform_dependency
-      if has_swift_scripting_platform_dependency
-        return
-      end
-
-      path = package_swift_path
-      lines = SwiftUtil.read(path)
-      config = Config.shared.swift_scripting_platform
-      lines.concat [
-        "package.dependencies.append(.Package(url: \"#{config[:url]}\",",
-        "                                     versions: #{config[:version]}))",
-      ]
-      SwiftUtil.write(path, lines)
     end
 
   private

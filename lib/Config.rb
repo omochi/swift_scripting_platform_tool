@@ -1,10 +1,9 @@
 module SwiftScriptingPlatformTool
   class Config
-    attr_accessor :swift_scripting_platform
-    attr_accessor :swift_scripting_platform_version
+    attr_accessor :scripting_lib
 
     def initialize
-      @swift_scripting_platform = {
+      @scripting_lib = {
         name: "SwiftScriptingPlatform",
         url: "https://github.com/omochi/SwiftScriptingPlatform.git",
         version: %("0.1.0" ..< "0.2.0")
