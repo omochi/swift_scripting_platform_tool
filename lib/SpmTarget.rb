@@ -50,16 +50,31 @@ module SwiftScriptingPlatformTool
       main_swift.save
     end
 
+    def has_script_swift(script_name)
+      file_name = AppUtil.script_name_to_class_file_name(script_name)
+      script_class_files.any? {|x| x.basename.to_s == file_name }
+    end
+
     def add_script_swift(script_name)
       class_name = AppUtil.script_name_to_class_name(script_name)
       str = ScriptClassSwift.new(class_name).render
-      path = dir + "#{class_name}.swift"
+      path = dir + AppUtil.script_name_to_class_file_name(script_name)
       path.binwrite(str)
     end
 
-    def get_script_class_path(class_name)
+    def remove_script_swift(script_name)
+      file_name = AppUtil.script_name_to_class_file_name(script_name)
+      for file in script_class_files
+        if file.basename.to_s == file_name
+          file.delete
+        end
+      end
+    end
+
+    def get_script_class_path(script_name)
+      file_name = AppUtil.script_name_to_class_file_name(script_name)
       script_class_files.find {|x| 
-        x.basename.to_s == "#{class_name}.swift"}
+        x.basename.to_s == file_name }
     end
 
   end

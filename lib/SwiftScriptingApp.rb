@@ -11,6 +11,7 @@ require_relative "RootCommand"
 require_relative "InitCommand"
 require_relative "ListCommand"
 require_relative "AddCommand"
+require_relative "RemoveCommand"
 require_relative "SyncCommand"
 
 module SwiftScriptingPlatformTool
@@ -68,7 +69,7 @@ module SwiftScriptingPlatformTool
         init_tree
         for target in tree.targets
           for script_entry in target.main_swift.script_entries
-            path = target.get_script_class_path(script_entry.class_name)
+            path = target.get_script_class_path(script_entry.script_name)
             puts format("    %-16s => %s", 
               script_entry.script_name, path.to_s)
           end
@@ -77,22 +78,39 @@ module SwiftScriptingPlatformTool
     end
 
     def main_add(args)
-      AddCommand.new(self).main(args) do
+      AddCommand.new(self).main(args) do |script_name|
         init_tree
         if ! check_tree
           return
         end
 
         for target in tree.targets.select {|x| x.main_swift }
-          for script in target.main_swift.script_entries
-            if script.script_name == script_name
-              print_error("script #{script_name} is already defined")
-              return
-            end
+          if target.has_script_swift(script_name)
+            print_error("script #{script_name} is already defined")
+            return
           end
+          target.add_script_swift(script_name)
         end
 
-        tree.targets[0].add_script_swift(script_name)
+        main_sync([])
+      end
+    end
+
+    def main_remove(args)
+      RemoveCommand.new(self).main(args) do |script_name|
+        init_tree
+        if ! check_tree
+          return
+        end
+
+        for target in tree.targets.select {|x| x.main_swift }
+          if ! target.has_script_swift(script_name)
+            print_error("script #{script_name} is not defined")
+            return
+          end
+          target.remove_script_swift(script_name)
+        end
+
         main_sync([])
       end
     end

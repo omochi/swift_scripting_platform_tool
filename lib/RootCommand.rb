@@ -14,6 +14,7 @@ module SwiftScriptingPlatformTool
         "    init        init SPM project",
         "    list        show script list",
         "    add         add script",
+        "    remove      remove script",
         "    sync        update main.swift and entry point scripts",
         "                based on existing script class files",
         ""
@@ -46,6 +47,9 @@ module SwiftScriptingPlatformTool
           return
         when "add"
           app.main_add(args)
+          return
+        when "remove"
+          app.main_remove(args)
           return
         when "sync"
           app.main_sync(args)

@@ -1,12 +1,12 @@
 module SwiftScriptingPlatformTool
-  class AddCommand
+  class RemoveCommand
     attr_reader :app
     def initialize(app)
       @app = app
     end
     def print_help
       lines = [
-        "Usage: swift-scripting add <script-name>",
+        "Usage: swift-scripting remove <script-name>",
         "",
       ]
       puts lines.map {|x| x + "\n" }.join
@@ -49,4 +49,3 @@ module SwiftScriptingPlatformTool
     end
   end
 end
-

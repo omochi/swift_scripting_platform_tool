@@ -13,6 +13,10 @@ module SwiftScriptingPlatformTool
       snake_case_to_camel_case(str) + "Script"
     end
 
+    def self.script_name_to_class_file_name(str)
+      script_name_to_class_name(str) + ".swift"
+    end
+
     def self.camel_case_to_snake_case(str, separator="_")
       regex = /(?:[A-Z][a-z]*|[a-z]+|[0-9]+|[_]+)/
       strs = [ str ]
