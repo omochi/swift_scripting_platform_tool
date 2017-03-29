@@ -6,16 +6,15 @@ require_relative "Config"
 require_relative "ShellUtil"
 require_relative "SwiftUtil"
 require_relative "CommandLineHelper"
-require_relative "PackageSwiftCode"
-require_relative "SpmTargetsReader"
-require_relative "MainSwiftUpdater"
-require_relative "EntryPointScript"
+require_relative "PackageTree"
 
 module SwiftScriptingPlatformTool
   class SwiftScriptingApp
 
+    attr_reader :tree
     attr_reader :helper
     def initialize
+      @tree = nil
       @helper = CommandLineHelper.new
     end
 
@@ -55,11 +54,12 @@ module SwiftScriptingPlatformTool
       when "ok"
       end
 
-      package_code = PackageSwiftCode.new
-      package_code.init_spm_if_need
-      package_code.load
-      package_code.add_scripting_lib_if_need
+      @tree = PackageTree.new(Pathname("."))
+      tree.scan
       
+      tree.init_spm_if_need
+      tree.add_scripting_lib_if_need
+
       main_sync([])
     end
 
@@ -76,23 +76,23 @@ module SwiftScriptingPlatformTool
       when "ok"
       end
 
-      package_code = PackageSwiftCode.new
-      if ! package_code.is_spm_inited
-        puts "error: SPM is not inited here"
-        return
-      end
+      # package_code = PackageSwiftCode.new
+      # if ! package_code.is_spm_inited
+      #   puts "error: SPM is not inited here"
+      #   return
+      # end
 
-      targets = (SpmTargetsReader.new).read
-      if targets.length >= 2
-        puts "error: multiple targets does not supported"
-        return
-      end
+      # targets = (SpmTargetsReader.new).read
+      # if targets.length >= 2
+      #   puts "error: multiple targets does not supported"
+      #   return
+      # end
 
-      updaters = targets.map {|target|
-        updater = MainSwiftUpdater.new
-        updater.sync(target)
-        updater
-      }
+      # updaters = targets.map {|target|
+      #   updater = MainSwiftUpdater.new
+      #   updater.sync(target)
+      #   updater
+      # }
     end
 
     def main_sync(args)
@@ -108,40 +108,15 @@ module SwiftScriptingPlatformTool
       when "ok"
       end
 
-      package_code = PackageSwiftCode.new
-      if ! package_code.is_spm_inited
+      @tree = PackageTree.new(Pathname("."))
+      tree.scan
+
+      if ! tree.spm_inited
         puts "error: SPM is not inited here"
         return
       end
 
-      targets = (SpmTargetsReader.new).read
-      if targets.length >= 2
-        puts "error: multiple targets does not supported"
-        return
-      end
-
-      updaters = targets.map {|target|
-        updater = MainSwiftUpdater.new
-        updater.sync(target)
-        updater
-      }
-
-      scripts = EntryPointScript.scan_scripts
-      for script in scripts
-        script.delete
-      end
-
-      for updater in updaters
-        for code_entry in updater.main_code.entries
-          script = EntryPointScript.new(updater.target[:name])
-          code = script.render
-
-          path = Pathname(code_entry[:script_name])
-          path.binwrite(code)
-          FileUtils.chmod("+x", path)
-        end
-      end
-
+      tree.sync_targets
     end
   end
 end

@@ -1,7 +1,7 @@
 require "pathname"
 
 module SwiftScriptingPlatformTool
-  class EntryPointScript
+  class StartScript
     
     attr_reader :target_name
 
@@ -22,12 +22,6 @@ cd "$wd"
 "$dir/.build/debug/#{target_name}" "$name" "$@"
 EOT
       return str
-    end
-
-    def self.scan_scripts
-      scripts = Pathname(".").children
-        .select {|x| x.file? && x.executable? }
-      return scripts
     end
   end
 end
