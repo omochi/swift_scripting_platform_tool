@@ -1,6 +1,8 @@
 require "pathname"
 
 require_relative "MainSwiftSource"
+require_relative "AppUtil"
+require_relative "ScriptClassSwift"
 
 module SwiftScriptingPlatformTool
   class SpmTarget
@@ -40,6 +42,13 @@ module SwiftScriptingPlatformTool
 
     def save
       main_swift.save
+    end
+
+    def add_script_swift(script_name)
+      class_name = AppUtil.script_name_to_class_name(script_name)
+      str = ScriptClassSwift.new(class_name).render
+      path = dir + "#{class_name}.swift"
+      path.binwrite(str)
     end
   end
 end

@@ -154,6 +154,8 @@ module SwiftScriptingPlatformTool
         s.delete
       end
 
+      scan
+
       for target in targets
         for script_entry in target.main_swift.script_entries
           str = StartScript.new(target.name).render
